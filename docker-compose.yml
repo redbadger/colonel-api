@@ -1,0 +1,13 @@
+web:
+  build: .
+  ports:
+    - "8080:4567"
+  volumes:
+    - .:/usr/src/app
+  links:
+    - redis
+    - elasticsearch
+redis:
+  image: redis
+elasticsearch:
+  image: elasticsearch
