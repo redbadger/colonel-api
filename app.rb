@@ -17,7 +17,12 @@ class App < Sinatra::Base
 
   get '/documents' do
     content_type :json
-    Document.list(sort: {updated_at: 'desc'}).map(&:content).to_json
+    Document.list(sort: {updated_at: 'desc'}).map do |doc|
+      {
+        id: doc.id,
+        content: doc.content
+      }
+    end.to_json
   end
 
   get '/documents/:id/revisions' do |id|

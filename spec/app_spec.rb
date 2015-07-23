@@ -43,14 +43,25 @@ describe App do
     doc_1 = Document.new(example_blog_1)
     doc_1.save!(name: 'Erlich Bachman', email: 'erlich@example.com')
     sleep 1
-
     doc_2 = Document.new(example_blog_2)
     doc_2.save!(name: 'Erlich Bachman', email: 'erlich@example.com')
-
     sleep 1
+
+    result =
+      [
+        {
+          id: doc_2.id,
+          content: doc_2.content
+        },
+        {
+          id: doc_1.id,
+          content: doc_1.content
+        }
+      ]
+
     get '/documents'
     expect(last_response).to be_ok
-    expect(last_response.body).to eq [example_blog_2, example_blog_1].to_json
+    expect(last_response.body).to eq result.to_json
   end
 
   it 'documents/:id/revisions' do
@@ -59,7 +70,7 @@ describe App do
     sleep 1
     doc.content.tags << "Newtag"
     doc.save!({ name: 'Erlich Bachman', email: 'colonel@example.com' }, 'Second commit')
-    sleep 10
+    sleep 1
 
     get "documents/#{doc.id}/revisions"
     expect(last_response).to be_ok
