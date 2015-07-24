@@ -1,3 +1,5 @@
+[![Circle CI](https://circleci.com/gh/redbadger/colonel-api.svg?style=svg)](https://circleci.com/gh/redbadger/colonel-api)
+
 # Colonel API
 
 A Docker compose set up that spins up a Sinatra [Colonel](https://github.com/Bskyb/colonel) API container and a container for each of it's two dependencies; Elasticsearch and Redis. The goal of this app is to allow applications not written in Ruby(Colonel is a Ruby gem) to use the Colonel via a RESTful interface.
