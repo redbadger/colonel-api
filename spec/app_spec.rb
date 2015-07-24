@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'json'
 
 describe App do
   include Rack::Test::Methods
@@ -39,7 +40,9 @@ describe App do
     # redis.del tag_keys unless tag_keys.empty?
   end
 
-  it '/documents' do
+  after { expect(last_response.headers['Content-Type']).to eq 'application/json' }
+
+  it 'GET /documents' do
     doc_1 = Document.new(example_blog_1)
     doc_1.save!(name: 'Erlich Bachman', email: 'erlich@example.com')
     sleep 1
@@ -64,7 +67,57 @@ describe App do
     expect(last_response.body).to eq result.to_json
   end
 
-  it 'documents/:id/revisions' do
+  it 'POST /documents' do
+    post_data =
+      {
+        name: 'Albert Still',
+        email: 'albert.still@red-badger.com',
+        message: 'Commit message',
+        content: example_blog_1
+      }
+
+    post '/documents', post_data.to_json
+
+    sleep 1
+
+    response =
+      {
+        id: Document.list.first.id,
+        content: example_blog_1
+      }
+
+    expect(last_response).to be_created
+    expect(last_response.body).to eq response.to_json
+  end
+
+  it 'PUT documents/:id' do
+    doc = Document.new(example_blog_1)
+    doc.save!({ name: 'Erlich Bachman', email: 'erlich@example.com' }, 'First commit')
+    sleep 1
+    updated_blog = example_blog_1.clone
+    updated_blog[:tags] = ['Test', 'Content', 'Newtag']
+
+    post_data =
+      {
+        name: 'Albert Still',
+        email: 'albert.still@red-badger.com',
+        message: 'Commit message',
+        content: updated_blog
+      }
+
+    put "documents/#{doc.id}", post_data.to_json
+
+    result =
+      {
+        id: Document.list.first.id,
+        content: updated_blog
+      }
+
+    expect(last_response).to be_ok
+    expect(last_response.body).to eq result.to_json
+  end
+
+  it 'GET documents/:id/revisions' do
     doc = Document.new(example_blog_1)
     doc.save!({ name: 'Erlich Bachman', email: 'erlich@example.com' }, 'First commit')
     sleep 1
@@ -77,7 +130,7 @@ describe App do
 
     updated_blog = example_blog_1.clone
     updated_blog[:tags] = ['Test', 'Content', 'Newtag']
-
     expect(last_response.body).to eq [updated_blog, example_blog_1].to_json
   end
+
 end
