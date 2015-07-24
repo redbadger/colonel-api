@@ -52,7 +52,7 @@ describe App do
     doc_2.save!(name: 'Erlich Bachman', email: 'erlich@example.com')
     sleep 1
 
-    result =
+    response =
       [
         {
           id: doc_2.id,
@@ -66,7 +66,7 @@ describe App do
 
     get '/documents'
     expect(last_response).to be_ok
-    expect(last_response.body).to eq result.to_json
+    expect(last_response.body).to eq response.to_json
   end
 
   it 'POST /documents' do
@@ -92,6 +92,23 @@ describe App do
     expect(last_response.body).to eq response.to_json
   end
 
+  it 'GET documents/:id' do
+    doc = Document.new(example_blog_1)
+    doc.save!(
+      { name: 'Erlich Bachman', email: 'erlich@example.com' },
+      'First commit')
+
+    get "/documents/#{doc.id}"
+
+    response =
+      {
+        id: doc.id,
+        content: example_blog_1
+      }
+    expect(last_response).to be_ok
+    expect(last_response.body).to eq response.to_json
+  end
+
   it 'PUT documents/:id' do
     doc = Document.new(example_blog_1)
     doc.save!(
@@ -112,14 +129,14 @@ describe App do
 
     put "documents/#{doc.id}", post_data.to_json
 
-    result =
+    response =
       {
         id: Document.list.first.id,
         content: updated_blog
       }
 
     expect(last_response).to be_ok
-    expect(last_response.body).to eq result.to_json
+    expect(last_response.body).to eq response.to_json
   end
 
   it 'GET documents/:id/revisions' do

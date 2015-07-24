@@ -17,9 +17,7 @@ Colonel::ElasticsearchProvider.initialize!
 class App < Sinatra::Base
   set :bind, '0.0.0.0'
 
-  before do
-    content_type 'application/json'
-  end
+  before { content_type 'application/json' }
 
   get '/documents' do
     Document.list(sort: { updated_at: 'desc' }).map do |doc|
@@ -34,6 +32,10 @@ class App < Sinatra::Base
 
     status 201
     body doc_hash(doc).to_json
+  end
+
+  get '/documents/:id' do |id|
+    doc_hash(Document.open(id)).to_json
   end
 
   put '/documents/:id' do |id|
