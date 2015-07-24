@@ -9,10 +9,6 @@ describe App do
     App
   end
 
-  let(:Document) do
-    Colonel::DocumentType.new('document') { index_name 'colonel-api' }
-  end
-
   let(:example_blog_1) do
     {
       title: 'Hello Colonel',
@@ -31,7 +27,7 @@ describe App do
 
   after do
     # clear ES data
-    client = ::Elasticsearch::Client.new(
+    client = Elasticsearch::Client.new(
       host: Colonel.config.elasticsearch_uri,
       log: false)
     client.delete_by_query index: Document.index_name, q: '*'
