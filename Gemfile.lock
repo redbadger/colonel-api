@@ -51,6 +51,7 @@ GEM
       rack
     rack-test (0.6.3)
       rack (>= 1.0)
+    redis (3.2.1)
     rspec (3.3.0)
       rspec-core (~> 3.3.0)
       rspec-expectations (~> 3.3.0)
@@ -82,6 +83,7 @@ DEPENDENCIES
   colonel (~> 0.6.1)!
   pry
   rack-test
+  redis
   rspec
   rugged!
   rugged-redis!

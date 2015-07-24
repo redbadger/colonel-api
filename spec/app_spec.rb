@@ -1,5 +1,6 @@
 require 'spec_helper'
 require 'json'
+require 'redis'
 
 describe App do
   include Rack::Test::Methods
@@ -15,7 +16,7 @@ describe App do
   let(:example_blog_1) do
     {
       title: 'Hello Colonel',
-      tags: ['Test', 'Content'],
+      tags: %w(Test Content),
       body: 'Some text.'
     }
   end
@@ -23,24 +24,25 @@ describe App do
   let(:example_blog_2) do
     {
       title: 'Hello Colonel its me again',
-      tags: ['Test', 'Content'],
+      tags: %w(Test Content),
       body: 'Some more text.'
     }
   end
 
   after do
-    client = ::Elasticsearch::Client.new(host: Colonel.config.elasticsearch_uri, log: false)
+    # clear ES data
+    client = ::Elasticsearch::Client.new(
+      host: Colonel.config.elasticsearch_uri,
+      log: false)
     client.delete_by_query index: Document.index_name, q: '*'
 
-    # TODO delete redis data
-    # redis = Redis.new(host: Rails.configuration.redis_host, port: Rails.configuration.redis_port, password: Rails.configuration.redis_password)
-    # storage_keys = redis.keys("rugged:#{Rails.configuration.storage_path}*")
-    # redis.del storage_keys unless storage_keys.empty?
-    # tag_keys = redis.keys("#{Rails.configuration.tags_key}*")
-    # redis.del tag_keys unless tag_keys.empty?
+    # clear Redis data
+    Redis.new(host: 'redis', port: 6379).flushdb
   end
 
-  after { expect(last_response.headers['Content-Type']).to eq 'application/json' }
+  after do
+    expect(last_response.headers['Content-Type']).to eq 'application/json'
+  end
 
   it 'GET /documents' do
     doc_1 = Document.new(example_blog_1)
@@ -92,10 +94,13 @@ describe App do
 
   it 'PUT documents/:id' do
     doc = Document.new(example_blog_1)
-    doc.save!({ name: 'Erlich Bachman', email: 'erlich@example.com' }, 'First commit')
+    doc.save!(
+      { name: 'Erlich Bachman', email: 'erlich@example.com' },
+      'First commit')
+
     sleep 1
     updated_blog = example_blog_1.clone
-    updated_blog[:tags] = ['Test', 'Content', 'Newtag']
+    updated_blog[:tags] = %w(Test Content Newtag)
 
     post_data =
       {
@@ -119,18 +124,21 @@ describe App do
 
   it 'GET documents/:id/revisions' do
     doc = Document.new(example_blog_1)
-    doc.save!({ name: 'Erlich Bachman', email: 'erlich@example.com' }, 'First commit')
+    doc.save!(
+      { name: 'Erlich Bachman', email: 'erlich@example.com' },
+      'First commit')
     sleep 1
-    doc.content.tags << "Newtag"
-    doc.save!({ name: 'Erlich Bachman', email: 'colonel@example.com' }, 'Second commit')
+    doc.content.tags << 'Newtag'
+    doc.save!(
+      { name: 'Erlich Bachman', email: 'colonel@example.com' },
+      'Second commit')
     sleep 1
 
     get "documents/#{doc.id}/revisions"
     expect(last_response).to be_ok
 
     updated_blog = example_blog_1.clone
-    updated_blog[:tags] = ['Test', 'Content', 'Newtag']
+    updated_blog[:tags] = %w(Test Content Newtag)
     expect(last_response.body).to eq [updated_blog, example_blog_1].to_json
   end
-
 end
