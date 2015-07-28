@@ -38,13 +38,10 @@ class App < Sinatra::Base
   end
 
   get '/documents/:id' do |id|
-    branch = params['state'] || 'master'
-    revision = Document.open(id).revisions[branch]
+    state = params['state'] || 'master'
+    revision = Document.open(id).revisions[state]
 
-    {
-      revision_id: revision.id,
-      content: revision.content
-    }.to_json
+    revision_hash(revision).to_json
   end
 
   put '/documents/:id' do |id|
@@ -69,6 +66,10 @@ class App < Sinatra::Base
     body doc_hash(doc).to_json
   end
 
+  get '/documents/:id/revisions/:revision_id' do |id, revision_id|
+    revision_hash(Document.open(id).revisions[revision_id]).to_json
+  end
+
   get '/documents/:id/revisions' do |id|
     Document.open(id).history.map(&:content).to_json
   end
@@ -79,6 +80,13 @@ class App < Sinatra::Base
     {
       id: doc.id,
       content: doc.content
+    }
+  end
+
+  def revision_hash(revision)
+    {
+      revision_id: revision.id,
+      content: revision.content
     }
   end
 

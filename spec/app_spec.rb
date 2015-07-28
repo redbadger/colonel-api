@@ -176,6 +176,24 @@ describe App do
       .to eq 'Published my blog!'
   end
 
+  it 'GET documents/:id/revisions/:id' do
+    doc = Document.new(example_blog_1)
+    revision = doc.save!(
+      { name: 'Erlich Bachman', email: 'erlich@example.com' },
+      'First commit')
+    sleep 1
+
+    get "documents/#{doc.id}/revisions/#{revision.id}"
+    expect(last_response).to be_ok
+
+    response =
+      {
+        revision_id: revision.id,
+        content: revision.content
+      }
+    expect(last_response.body).to eq response.to_json
+  end
+
   it 'GET documents/:id/revisions' do
     doc = Document.new(example_blog_1)
     doc.save!(
