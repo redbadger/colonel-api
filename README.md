@@ -15,3 +15,12 @@ docker-compose up
 If your using Boot2Docker run `boot2docker ip` to get your VM's ip and the API endpoint will be at:
 
 http://ip-from-Boot2Docker:8080
+
+
+## Contributing
+
+1. Fork it
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Commit your changes (`git commit -am 'Add some feature'`)
+4. Push to the branch (`git push origin my-new-feature`)
+5. Create new Pull Request
