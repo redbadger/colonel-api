@@ -135,6 +135,27 @@ describe App do
     expect(last_response.body).to eq response.to_json
   end
 
+  it 'POST documents/:id/promote' do
+    doc = Document.new(example_blog_1)
+    doc.save!(
+      { name: 'Erlich Bachman', email: 'erlich@example.com' },
+      'First commit')
+
+    publish_commit =
+      {
+        name: 'Albert Still',
+        email: 'oink@farm.com',
+        message: 'Published my blog!'
+      }
+
+    post "documents/#{doc.id}/promote?from=master&to=foo",
+         publish_commit.to_json
+    sleep 1
+    expect(last_response).to be_ok
+    expect(Document.list.first.revisions['foo'].message)
+      .to eq 'Published my blog!'
+  end
+
   it 'GET documents/:id/revisions' do
     doc = Document.new(example_blog_1)
     doc.save!(

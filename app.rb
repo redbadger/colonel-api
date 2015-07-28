@@ -51,6 +51,18 @@ class App < Sinatra::Base
     body doc_hash(doc).to_json
   end
 
+  post '/documents/:id/promote' do |id|
+    doc = Document.open(id)
+    data = JSON.parse(request.body.read)
+    doc.promote! params['from'],
+                 params['to'],
+                 { name: data['name'], email: data['email'] },
+                 data['message']
+
+    status 200
+    body doc_hash(doc).to_json
+  end
+
   get '/documents/:id/revisions' do |id|
     Document.open(id).history.map(&:content).to_json
   end
