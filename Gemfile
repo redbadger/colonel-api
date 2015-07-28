@@ -26,4 +26,5 @@ group :test do
   gem 'rspec'
   gem 'rack-test'
   gem 'redis'
+  gem 'simplecov', require: false
 end
