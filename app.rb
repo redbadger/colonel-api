@@ -38,7 +38,13 @@ class App < Sinatra::Base
   end
 
   get '/documents/:id' do |id|
-    doc_hash(Document.open(id)).to_json
+    branch = params['state'] || 'master'
+    revision = Document.open(id).revisions[branch]
+
+    {
+      revision_id: revision.id,
+      content: revision.content
+    }.to_json
   end
 
   put '/documents/:id' do |id|

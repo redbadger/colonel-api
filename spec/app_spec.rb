@@ -88,21 +88,41 @@ describe App do
     expect(last_response.body).to eq response.to_json
   end
 
-  it 'GET documents/:id' do
-    doc = Document.new(example_blog_1)
-    doc.save!(
-      { name: 'Erlich Bachman', email: 'erlich@example.com' },
-      'First commit')
+  describe 'GET documents/:id' do
+    it 'defaults to latest master revision' do
+      doc = Document.new(example_blog_1)
+      doc.save!(
+        { name: 'Erlich Bachman', email: 'erlich@example.com' },
+        'First commit')
+      sleep 1
+      get "/documents/#{doc.id}"
 
-    get "/documents/#{doc.id}"
+      response =
+        {
+          revision_id: doc.revisions['master'].id,
+          content: example_blog_1
+        }
+      expect(last_response).to be_ok
+      expect(last_response.body).to eq response.to_json
+    end
 
-    response =
-      {
-        id: doc.id,
-        content: example_blog_1
-      }
-    expect(last_response).to be_ok
-    expect(last_response.body).to eq response.to_json
+    it 'gets latest revision from state defined in query param' do
+      doc = Document.new(example_blog_1)
+      doc.save_in!(
+        'foo',
+        { name: 'Erlich Bachman', email: 'erlich@example.com' },
+        'First commit')
+      sleep 1
+      get "/documents/#{doc.id}?state=foo"
+
+      response =
+        {
+          revision_id: doc.revisions['foo'].id,
+          content: example_blog_1
+        }
+      expect(last_response).to be_ok
+      expect(last_response.body).to eq response.to_json
+    end
   end
 
   it 'PUT documents/:id' do
