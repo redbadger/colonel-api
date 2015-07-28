@@ -194,23 +194,73 @@ describe App do
     expect(last_response.body).to eq response.to_json
   end
 
-  it 'GET documents/:id/revisions' do
-    doc = Document.new(example_blog_1)
-    doc.save!(
-      { name: 'Erlich Bachman', email: 'erlich@example.com' },
-      'First commit')
-    sleep 1
-    doc.content.tags << 'Newtag'
-    doc.save!(
-      { name: 'Erlich Bachman', email: 'colonel@example.com' },
-      'Second commit')
-    sleep 1
+  describe 'GET documents/:id/revisions' do
+    it 'defaults to latest master revisions' do
+      doc = Document.new(example_blog_1)
+      revision_1 = doc.save!(
+        { name: 'Erlich Bachman', email: 'erlich@example.com' },
+        'First commit')
+      sleep 1
+      revision_2 = doc.save!(
+        { name: 'Erlich Bachman', email: 'colonel@example.com' },
+        'Second commit')
+      sleep 1
 
-    get "documents/#{doc.id}/revisions"
-    expect(last_response).to be_ok
+      get "documents/#{doc.id}/revisions"
+      expect(last_response).to be_ok
 
-    updated_blog = example_blog_1.clone
-    updated_blog[:tags] = %w(Test Content Newtag)
-    expect(last_response.body).to eq [updated_blog, example_blog_1].to_json
+      result =
+        [
+          {
+            id: revision_2.id,
+            name: revision_2.author[:name],
+            email: revision_2.author[:email],
+            message: revision_2.message
+          },
+          {
+            id: revision_1.id,
+            name: revision_1.author[:name],
+            email: revision_1.author[:email],
+            message: revision_1.message
+          }
+        ]
+
+      expect(last_response.body).to eq result.to_json
+    end
+
+    it 'gets revisions from state defined in query param' do
+      doc = Document.new(example_blog_1)
+      revision_1 = doc.save_in!(
+        'foo',
+        { name: 'Erlich Bachman', email: 'erlich@example.com' },
+        'First commit')
+      sleep 1
+      revision_2 = doc.save_in!(
+        'foo',
+        { name: 'Erlich Bachman', email: 'colonel@example.com' },
+        'Second commit')
+      sleep 1
+
+      get "documents/#{doc.id}/revisions?state=foo"
+      expect(last_response).to be_ok
+
+      result =
+        [
+          {
+            id: revision_2.id,
+            name: revision_2.author[:name],
+            email: revision_2.author[:email],
+            message: revision_2.message
+          },
+          {
+            id: revision_1.id,
+            name: revision_1.author[:name],
+            email: revision_1.author[:email],
+            message: revision_1.message
+          }
+        ]
+
+      expect(last_response.body).to eq result.to_json
+    end
   end
 end

@@ -71,7 +71,16 @@ class App < Sinatra::Base
   end
 
   get '/documents/:id/revisions' do |id|
-    Document.open(id).history.map(&:content).to_json
+    state = params['state'] || 'master'
+
+    Document.open(id).history(state).map do |revision|
+      {
+        id: revision.id,
+        name: revision.author[:name],
+        email: revision.author[:email],
+        message: revision.message
+      }
+    end.to_json
   end
 
   private
