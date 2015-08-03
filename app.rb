@@ -14,7 +14,17 @@ Colonel.config.rugged_backend = redis_backend
 
 Document = Colonel::DocumentType.new('document') { index_name 'colonel-api' }
 
-Colonel::ElasticsearchProvider.initialize!
+retries = [3, 5, 10]
+begin
+  Colonel::ElasticsearchProvider.initialize!
+rescue => e
+  if delay = retries.shift
+    sleep delay
+    retry
+  else
+    raise
+  end
+end
 
 # The API
 class App < Sinatra::Base
