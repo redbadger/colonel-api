@@ -8,7 +8,7 @@ uri = URI(ENV['ELASTICSEARCH_URI'] || ENV['COLONELAPI_ELASTICSEARCH_1_PORT'])
 uri.scheme = 'http' # is tcp otherwise
 Colonel.config.elasticsearch_uri = uri.to_s
 
-uri = URI(ENV['REDIS'] || ENV['COLONELAPI_REDIS_1_PORT'])
+uri = URI(ENV['REDIS_URI'] || ENV['COLONELAPI_REDIS_1_PORT'])
 redis_backend = Rugged::Redis::Backend.new(host: uri.host, port: uri.port)
 Colonel.config.rugged_backend = redis_backend
 
