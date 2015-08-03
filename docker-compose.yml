@@ -9,5 +9,8 @@ web:
     - elasticsearch
 redis:
   image: redis
+  volumes:
+    - ./redis.conf:/usr/local/etc/redis/redis.conf
+  command: redis-server /usr/local/etc/redis/redis.conf
 elasticsearch:
   image: elasticsearch
