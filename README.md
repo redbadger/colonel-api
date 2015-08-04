@@ -17,12 +17,6 @@ If your using Boot2Docker run `boot2docker ip` to get your VM's ip and the API e
 
 http://ip-from-Boot2Docker:8080
 
-
-## Contributing
-
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
->>>>>>> 23fb6194baef6c0375db113b27e9b10d04c1f401
+## Tests
+To run tests use the following command
+`$ docker-compose run web bundle exec rake test`
