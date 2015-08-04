@@ -7,6 +7,8 @@ web:
   links:
     - redis
     - elasticsearch
+  environment:
+    - RACK_ENV=development
 redis:
   image: redis
 elasticsearch:
