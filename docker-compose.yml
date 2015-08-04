@@ -7,8 +7,9 @@ web:
   links:
     - redis
     - elasticsearch
+  restart: always
   environment:
-    - RACK_ENV=development
+    RACK_ENV: development
 redis:
   image: redis
   volumes:

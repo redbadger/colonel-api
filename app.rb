@@ -1,4 +1,5 @@
 require 'sinatra/base'
+require "sinatra/reloader" if :development?
 require 'colonel'
 require 'rugged-redis'
 require 'pry'
@@ -29,6 +30,11 @@ end
 
 # The API
 class App < Sinatra::Base
+
+  configure :development do
+    register Sinatra::Reloader
+  end
+
   set :bind, '0.0.0.0'
 
   before { content_type 'application/json' }
@@ -94,6 +100,13 @@ class App < Sinatra::Base
     end.to_json
   end
 
+  get '/search' do
+    hits = Document.search(query(params), history: true)
+    return nil unless hits.any?
+    doc = hits.first
+    body doc_hash(doc).to_json
+  end
+
   private
 
   def doc_hash(doc)
@@ -108,6 +121,32 @@ class App < Sinatra::Base
       revision_id: revision.id,
       content: revision.content
     }
+  end
+
+  def query(params)
+    {
+      query: {
+        constant_score: {
+          filter: {
+            and: term_array(params[:q]) << {term: {state: params[:state] || 'master'}}
+          }
+        }
+      }
+    }
+  end
+
+  def search(query, opts = {size: 1000, scope: 'latest'})
+    hits = Document.search(query, opts)
+    hits.map { |hit| Page.new(nil, document: hit) }
+  end
+
+  def term_array(hash)
+    hash = hash.to_hash if hash.is_a?(Hash)
+    hash.each_with_object([]) do |(k,v), h|
+      value = {}
+      value[k.to_sym] = v
+      h << {term: value}
+    end
   end
 
   run! if app_file == $PROGRAM_NAME
