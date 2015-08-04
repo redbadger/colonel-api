@@ -57,7 +57,7 @@ class App < Sinatra::Base
   get '/documents/:id' do |id|
     state = params['state'] || 'master'
     revision = Document.open(id).revisions[state]
-
+    return {} unless revision
     revision_hash(revision).to_json
   end
 
@@ -90,21 +90,23 @@ class App < Sinatra::Base
   get '/documents/:id/revisions' do |id|
     state = params['state'] || 'master'
 
-    Document.open(id).history(state).map do |revision|
-      {
-        id: revision.id,
-        name: revision.author[:name],
-        email: revision.author[:email],
-        message: revision.message
-      }
-    end.to_json
+    Document.open(id).history(state).map { |revision| history_hash(revision) }.to_json
   end
 
-  get '/search' do
-    hits = Document.search(query(params), history: true)
-    return nil unless hits.any?
-    doc = hits.first
-    body doc_hash(doc).to_json
+  get '/documents/:id/history' do |id|
+    states = params[:states] || [:master]
+    states.flat_map {|state| Document.open(id).history(state.to_sym).to_a }
+          .sort_by { |r| [r.author[:time], r.type] }
+          .reverse
+          .map { |revision| history_hash(revision) }.to_json
+  end
+
+  post '/search' do
+    body = request.body.read
+    return nil if body.empty?
+    data = JSON.parse(body)
+    hits = Document.search(data)
+    body hits.map{ |hit| doc_hash(hit) }.to_json
   end
 
   private
@@ -123,30 +125,15 @@ class App < Sinatra::Base
     }
   end
 
-  def query(params)
-    {
-      query: {
-        constant_score: {
-          filter: {
-            and: term_array(params[:q]) << {term: {state: params[:state] || 'master'}}
-          }
-        }
-      }
+  def history_hash(revision)
+    hash = {
+      revision_id: revision.id,
+      name: revision.author[:name],
+      email: revision.author[:email],
+      message: revision.message
     }
-  end
-
-  def search(query, opts = {size: 1000, scope: 'latest'})
-    hits = Document.search(query, opts)
-    hits.map { |hit| Page.new(nil, document: hit) }
-  end
-
-  def term_array(hash)
-    hash = hash.to_hash if hash.is_a?(Hash)
-    hash.each_with_object([]) do |(k,v), h|
-      value = {}
-      value[k.to_sym] = v
-      h << {term: value}
-    end
+    hash['state'] = revision.state if defined? revision.state
+    hash
   end
 
   run! if app_file == $PROGRAM_NAME
