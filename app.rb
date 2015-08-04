@@ -4,17 +4,28 @@ require 'rugged-redis'
 require 'pry'
 require 'json'
 
-uri = URI(ENV['COLONELAPI_ELASTICSEARCH_1_PORT'])
+uri = URI(ENV['ELASTICSEARCH_1_PORT'])
 uri.scheme = 'http' # is tcp otherwise
 Colonel.config.elasticsearch_uri = uri.to_s
 
-uri = URI(ENV['COLONELAPI_REDIS_1_PORT'])
+uri = URI(ENV['REDIS_1_PORT'])
 redis_backend = Rugged::Redis::Backend.new(host: uri.host, port: uri.port)
 Colonel.config.rugged_backend = redis_backend
 
 Document = Colonel::DocumentType.new('document') { index_name 'colonel-api' }
 
-Colonel::ElasticsearchProvider.initialize!
+retries = [3, 5, 10]
+begin
+  Colonel::ElasticsearchProvider.initialize!
+rescue
+  delay = retries.shift
+  if delay
+    sleep delay
+    retry
+  else
+    raise
+  end
+end
 
 # The API
 class App < Sinatra::Base

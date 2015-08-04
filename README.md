@@ -1,4 +1,5 @@
-[![Circle CI](https://circleci.com/gh/redbadger/colonel-api.svg?style=svg)](https://circleci.com/gh/redbadger/colonel-api)
+# fm-dubai-colonel-api
+Fork of https://github.com/redbadger/colonel-api
 
 # Colonel API
 
@@ -16,11 +17,6 @@ If your using Boot2Docker run `boot2docker ip` to get your VM's ip and the API e
 
 http://ip-from-Boot2Docker:8080
 
-
-## Contributing
-
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+## Tests
+To run tests use the following command
+`$ docker-compose run web bundle exec rake test`
