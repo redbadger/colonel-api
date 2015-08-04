@@ -18,7 +18,8 @@ retries = [3, 5, 10]
 begin
   Colonel::ElasticsearchProvider.initialize!
 rescue
-  if delay == retries.shift
+  delay = retries.shift
+  if delay
     sleep delay
     retry
   else
