@@ -6,4 +6,4 @@ rspec.verbose = false
 
 RuboCop::RakeTask.new
 
-task test: [:spec, :rubocop]
+task test: [:rubocop, :spec]

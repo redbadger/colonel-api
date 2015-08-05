@@ -7,7 +7,6 @@ web:
   links:
     - redis
     - elasticsearch
-  restart: always
   environment:
     RACK_ENV: development
 redis:

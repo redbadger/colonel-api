@@ -212,16 +212,18 @@ describe App do
       result =
         [
           {
-            id: revision_2.id,
+            revision_id: revision_2.id,
             name: revision_2.author[:name],
             email: revision_2.author[:email],
-            message: revision_2.message
+            message: revision_2.message,
+            state: 'master'
           },
           {
-            id: revision_1.id,
+            revision_id: revision_1.id,
             name: revision_1.author[:name],
             email: revision_1.author[:email],
-            message: revision_1.message
+            message: revision_1.message,
+            state: 'master'
           }
         ]
 
@@ -247,18 +249,121 @@ describe App do
       result =
         [
           {
-            id: revision_2.id,
+            revision_id: revision_2.id,
             name: revision_2.author[:name],
             email: revision_2.author[:email],
-            message: revision_2.message
+            message: revision_2.message,
+            state: 'foo'
           },
           {
-            id: revision_1.id,
+            revision_id: revision_1.id,
             name: revision_1.author[:name],
             email: revision_1.author[:email],
-            message: revision_1.message
+            message: revision_1.message,
+            state: 'foo'
           }
         ]
+
+      expect(last_response.body).to eq result.to_json
+    end
+  end
+
+  describe 'POST search' do
+    it 'should return posts matching the search criteria' do
+      doc1 = Document.new(example_blog_1)
+      doc1.content = example_blog_1
+
+      doc1.save!(
+        { name: 'Erlich Bachman', email: 'erlich@example.com' },
+        'First commit')
+      sleep 1
+
+      doc2 = Document.new(example_blog_1)
+      doc2.content = example_blog_1
+      doc2.content.tags = 'testing'
+
+      doc2.save!(
+        { name: 'Erlich Bachman', email: 'erlich@example.com' },
+        'First commit')
+      sleep 1
+
+      params = {
+        query: {
+          constant_score: {
+            filter: {
+              and: [
+                { term: { state: 'master' } },
+                { term: { tags: 'testing' } }
+              ]
+            }
+          }
+        }
+      }
+
+      header = { CONTENT_TYPE: 'application/json', ACCEPT: 'application/json' }
+      post 'search', params.to_json, header
+
+      expect(last_response).to be_ok
+
+      result = [
+        {
+          id: doc2.id,
+          content: doc2.content
+        }
+      ]
+
+      expect(last_response.body).to eq result.to_json
+    end
+  end
+
+  describe 'GET documents/:id/history' do
+    it 'should return history of of a document' do
+      doc = Document.new(example_blog_1)
+      doc.content = example_blog_1
+
+      revision1 = doc.save!(
+        { name: 'Erlich Bachman', email: 'erlich@example.com' },
+        'First commit')
+      sleep 1
+
+      revision2 = doc.save!(
+        { name: 'Erlich Bachman', email: 'erlich@example.com' },
+        'Second commit')
+      sleep 1
+
+      promotion = doc.promote!(
+        'master', 'published',
+        { name: 'Erlich Bachman', email: 'erlich@example.com' },
+        'Published')
+      sleep 1
+
+      get "documents/#{doc.id}/history", states: %w(master published)
+
+      expect(last_response).to be_ok
+
+      result = [
+        {
+          revision_id: promotion.id,
+          name: promotion.author[:name],
+          email: promotion.author[:email],
+          message: promotion.message,
+          state: 'published'
+        },
+        {
+          revision_id: revision2.id,
+          name: revision2.author[:name],
+          email: revision2.author[:email],
+          message: revision2.message,
+          state: 'master'
+        },
+        {
+          revision_id: revision1.id,
+          name: revision1.author[:name],
+          email: revision1.author[:email],
+          message: revision1.message,
+          state: 'master'
+        }
+      ]
 
       expect(last_response.body).to eq result.to_json
     end

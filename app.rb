@@ -1,5 +1,5 @@
 require 'sinatra/base'
-require "sinatra/reloader" if :development?
+require 'sinatra/reloader' if :development?
 require 'colonel'
 require 'rugged-redis'
 require 'pry'
@@ -30,7 +30,6 @@ end
 
 # The API
 class App < Sinatra::Base
-
   configure :development do
     register Sinatra::Reloader
   end
@@ -90,23 +89,24 @@ class App < Sinatra::Base
   get '/documents/:id/revisions' do |id|
     state = params['state'] || 'master'
 
-    Document.open(id).history(state).map { |revision| history_hash(revision) }.to_json
+    Document.open(id).history(state)
+      .map { |revision| history_hash(revision) }.to_json
   end
 
   get '/documents/:id/history' do |id|
     states = params[:states] || [:master]
-    states.flat_map {|state| Document.open(id).history(state.to_sym).to_a }
-          .sort_by { |r| [r.author[:time], r.type] }
-          .reverse
-          .map { |revision| history_hash(revision) }.to_json
+    states.flat_map { |state| Document.open(id).history(state.to_sym).to_a }
+      .sort_by { |r| [r.author[:time], r.type] }
+      .reverse
+      .map { |revision| history_hash(revision) }.to_json
   end
 
   post '/search' do
     body = request.body.read
-    return nil if body.empty?
+    return status 400 if body.empty?
     data = JSON.parse(body)
     hits = Document.search(data)
-    body hits.map{ |hit| doc_hash(hit) }.to_json
+    body hits.map { |hit| doc_hash(hit) }.to_json
   end
 
   private
