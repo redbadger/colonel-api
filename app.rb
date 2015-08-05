@@ -38,6 +38,14 @@ class App < Sinatra::Base
 
   before { content_type 'application/json' }
 
+  helpers do
+    def post_params
+      @parsed_body ||= JSON.parse(request.body.read)
+    rescue
+      {}
+    end
+  end
+
   get '/documents' do
     Document.list(sort: { updated_at: 'desc' }).map do |doc|
       doc_hash(doc)
@@ -45,41 +53,43 @@ class App < Sinatra::Base
   end
 
   post '/documents' do
-    data = JSON.parse(request.body.read)
-    doc = Document.new(data['content'])
-    doc.save!({ name: data['name'], email: data['email'] }, data['message'])
+    doc = Document.new(post_params['content'])
+    doc.save!(
+      { name: post_params['name'], email: post_params['email'] },
+      post_params['message']
+    )
 
     status 201
-    body doc_hash(doc).to_json
+    doc_hash(doc).to_json
   end
 
   get '/documents/:id' do |id|
     state = params['state'] || 'master'
     revision = Document.open(id).revisions[state]
-    return {} unless revision
+
+    halt 404 unless revision
     revision_hash(revision).to_json
   end
 
   put '/documents/:id' do |id|
     doc = Document.open(id)
-    data = JSON.parse(request.body.read)
-    doc.content = data['content']
-    doc.save!({ name: data['name'], email: data['email'] }, data['message'])
+    doc.content = post_params['content']
+    doc.save!(
+      { name: post_params['name'], email: post_params['email'] },
+      post_params['message']
+    )
 
-    status 200
-    body doc_hash(doc).to_json
+    doc_hash(doc).to_json
   end
 
   post '/documents/:id/promote' do |id|
     doc = Document.open(id)
-    data = JSON.parse(request.body.read)
     doc.promote! params['from'],
                  params['to'],
-                 { name: data['name'], email: data['email'] },
-                 data['message']
+                 { name: post_params['name'], email: post_params['email'] },
+                 post_params['message']
 
-    status 200
-    body doc_hash(doc).to_json
+    doc_hash(doc).to_json
   end
 
   get '/documents/:id/revisions/:revision_id' do |id, revision_id|
@@ -102,11 +112,10 @@ class App < Sinatra::Base
   end
 
   post '/search' do
-    body = request.body.read
-    return status 400 if body.empty?
-    data = JSON.parse(body)
-    hits = Document.search(data)
-    body hits.map { |hit| doc_hash(hit) }.to_json
+    halt 400 if post_params.empty?
+
+    hits = Document.search(post_params)
+    hits.map { |hit| doc_hash(hit) }.to_json
   end
 
   private
