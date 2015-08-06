@@ -39,7 +39,16 @@ class App < Sinatra::Base
   before { content_type 'application/json' }
 
   get '/documents' do
-    Document.list(sort: { updated_at: 'desc' }).map(&:id).to_json
+    size = params[:size] || 10
+    from = params[:from] || 0
+
+    Document.list(
+      size: size,
+      from: from,
+      sort: { updated_at: 'desc' }
+    ).map do |doc|
+      { id: doc.id }
+    end.to_json
   end
 
   post '/documents' do
@@ -48,7 +57,7 @@ class App < Sinatra::Base
     doc.save!({ name: data['name'], email: data['email'] }, data['message'])
 
     status 201
-    revision_hash(doc.revisions['master']).to_json
+    { id: doc.id }.to_json
   end
 
   put '/documents/:id' do |id|
@@ -57,7 +66,7 @@ class App < Sinatra::Base
     doc.content = data['content']
     doc.save!({ name: data['name'], email: data['email'] }, data['message'])
 
-    revision_hash(doc.revisions['master']).to_json
+    { id: doc.id }.to_json
   end
 
   post '/documents/:id/promote' do |id|
@@ -68,7 +77,7 @@ class App < Sinatra::Base
                  { name: data['name'], email: data['email'] },
                  data['message']
 
-    revision_hash(doc.revisions[params['to']]).to_json
+    { id: doc.id } .to_json
   end
 
   get '/documents/:id/revisions/:revision_id_or_state' do |id, id_or_state|

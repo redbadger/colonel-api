@@ -26,7 +26,7 @@ describe App do
   end
 
   after do
-    # clear ES data 
+    # clear ES data
     client = Elasticsearch::Client.new(
       host: Colonel.config.elasticsearch_uri,
       log: false)
@@ -48,7 +48,7 @@ describe App do
     doc_2.save!(name: 'Erlich Bachman', email: 'erlich@example.com')
     sleep 1
 
-    response = [doc_2.id, doc_1.id]
+    response = [{ id: doc_2.id }, { id: doc_1.id }]
 
     get '/documents'
     expect(last_response).to be_ok
@@ -68,19 +68,7 @@ describe App do
 
     sleep 1
 
-    revision = Document.list.first.revisions['master']
-
-    response =
-      {
-        commit: {
-          id: revision.id,
-          name: revision.author[:name],
-          email: revision.author[:email],
-          message: revision.message,
-          timestamp: revision.timestamp.iso8601
-        },
-        content: example_blog_1
-      }
+    response = { id: Document.list.first.id }
 
     expect(last_response).to be_created
     expect(last_response.body).to eq response.to_json
@@ -106,19 +94,7 @@ describe App do
 
     put "documents/#{doc.id}", post_data.to_json
 
-    revision = doc.revisions['master']
-
-    response =
-      {
-        commit: {
-          id: revision.id,
-          name: revision.author[:name],
-          email: revision.author[:email],
-          message: revision.message,
-          timestamp: revision.timestamp.iso8601
-        },
-        content: updated_blog
-      }
+    response = { id: doc.id }
 
     expect(last_response).to be_ok
     expect(last_response.body).to eq response.to_json
@@ -142,19 +118,7 @@ describe App do
     sleep 1
     expect(last_response).to be_ok
 
-    revision = Document.list.first.revisions['foo']
-
-    response =
-      {
-        commit: {
-          id: revision.id,
-          name: revision.author[:name],
-          email: revision.author[:email],
-          message: revision.message,
-          timestamp: revision.timestamp.iso8601
-        },
-        content: example_blog_1
-      }
+    response = { id: doc.id }
 
     expect(last_response).to be_ok
     expect(last_response.body).to eq response.to_json
