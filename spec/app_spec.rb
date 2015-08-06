@@ -26,7 +26,7 @@ describe App do
   end
 
   after do
-    # clear ES data
+    # clear ES data 
     client = Elasticsearch::Client.new(
       host: Colonel.config.elasticsearch_uri,
       log: false)
@@ -48,17 +48,7 @@ describe App do
     doc_2.save!(name: 'Erlich Bachman', email: 'erlich@example.com')
     sleep 1
 
-    response =
-      [
-        {
-          id: doc_2.id,
-          content: doc_2.content
-        },
-        {
-          id: doc_1.id,
-          content: doc_1.content
-        }
-      ]
+    response = [doc_2.id, doc_1.id]
 
     get '/documents'
     expect(last_response).to be_ok
@@ -78,51 +68,22 @@ describe App do
 
     sleep 1
 
+    revision = Document.list.first.revisions['master']
+
     response =
       {
-        id: Document.list.first.id,
+        commit: {
+          id: revision.id,
+          name: revision.author[:name],
+          email: revision.author[:email],
+          message: revision.message,
+          timestamp: revision.timestamp.iso8601
+        },
         content: example_blog_1
       }
 
     expect(last_response).to be_created
     expect(last_response.body).to eq response.to_json
-  end
-
-  describe 'GET documents/:id' do
-    it 'defaults to latest master revision' do
-      doc = Document.new(example_blog_1)
-      doc.save!(
-        { name: 'Erlich Bachman', email: 'erlich@example.com' },
-        'First commit')
-      sleep 1
-      get "/documents/#{doc.id}"
-
-      response =
-        {
-          revision_id: doc.revisions['master'].id,
-          content: example_blog_1
-        }
-      expect(last_response).to be_ok
-      expect(last_response.body).to eq response.to_json
-    end
-
-    it 'gets latest revision from state defined in query param' do
-      doc = Document.new(example_blog_1)
-      doc.save_in!(
-        'foo',
-        { name: 'Erlich Bachman', email: 'erlich@example.com' },
-        'First commit')
-      sleep 1
-      get "/documents/#{doc.id}?state=foo"
-
-      response =
-        {
-          revision_id: doc.revisions['foo'].id,
-          content: example_blog_1
-        }
-      expect(last_response).to be_ok
-      expect(last_response.body).to eq response.to_json
-    end
   end
 
   it 'PUT documents/:id' do
@@ -145,9 +106,17 @@ describe App do
 
     put "documents/#{doc.id}", post_data.to_json
 
+    revision = doc.revisions['master']
+
     response =
       {
-        id: Document.list.first.id,
+        commit: {
+          id: revision.id,
+          name: revision.author[:name],
+          email: revision.author[:email],
+          message: revision.message,
+          timestamp: revision.timestamp.iso8601
+        },
         content: updated_blog
       }
 
@@ -172,8 +141,23 @@ describe App do
          publish_commit.to_json
     sleep 1
     expect(last_response).to be_ok
-    expect(Document.list.first.revisions['foo'].message)
-      .to eq 'Published my blog!'
+
+    revision = Document.list.first.revisions['foo']
+
+    response =
+      {
+        commit: {
+          id: revision.id,
+          name: revision.author[:name],
+          email: revision.author[:email],
+          message: revision.message,
+          timestamp: revision.timestamp.iso8601
+        },
+        content: example_blog_1
+      }
+
+    expect(last_response).to be_ok
+    expect(last_response.body).to eq response.to_json
   end
 
   it 'GET documents/:id/revisions/:id' do
@@ -188,7 +172,13 @@ describe App do
 
     response =
       {
-        revision_id: revision.id,
+        commit: {
+          id: revision.id,
+          name: revision.author[:name],
+          email: revision.author[:email],
+          message: revision.message,
+          timestamp: revision.timestamp.iso8601
+        },
         content: revision.content
       }
     expect(last_response.body).to eq response.to_json
@@ -212,16 +202,24 @@ describe App do
       result =
         [
           {
-            id: revision_2.id,
-            name: revision_2.author[:name],
-            email: revision_2.author[:email],
-            message: revision_2.message
+            commit: {
+              id: revision_2.id,
+              name: revision_2.author[:name],
+              email: revision_2.author[:email],
+              message: revision_2.message,
+              timestamp: revision_2.timestamp.iso8601
+            },
+            content: revision_2.content
           },
           {
-            id: revision_1.id,
-            name: revision_1.author[:name],
-            email: revision_1.author[:email],
-            message: revision_1.message
+            commit: {
+              id: revision_1.id,
+              name: revision_1.author[:name],
+              email: revision_1.author[:email],
+              message: revision_1.message,
+              timestamp: revision_1.timestamp.iso8601
+            },
+            content: revision_1.content
           }
         ]
 
@@ -247,16 +245,24 @@ describe App do
       result =
         [
           {
-            id: revision_2.id,
-            name: revision_2.author[:name],
-            email: revision_2.author[:email],
-            message: revision_2.message
+            commit: {
+              id: revision_2.id,
+              name: revision_2.author[:name],
+              email: revision_2.author[:email],
+              message: revision_2.message,
+              timestamp: revision_2.timestamp.iso8601
+            },
+            content: revision_2.content
           },
           {
-            id: revision_1.id,
-            name: revision_1.author[:name],
-            email: revision_1.author[:email],
-            message: revision_1.message
+            commit: {
+              id: revision_1.id,
+              name: revision_1.author[:name],
+              email: revision_1.author[:email],
+              message: revision_1.message,
+              timestamp: revision_1.timestamp.iso8601
+            },
+            content: revision_1.content
           }
         ]
 

@@ -17,6 +17,10 @@ gem 'rugged-redis',
     tag: 'v0.1.1',
     submodules: true
 
+group :development do
+  gem 'sinatra-contrib'
+end
+
 group :test, :development do
   gem 'pry'
   gem 'rubocop'

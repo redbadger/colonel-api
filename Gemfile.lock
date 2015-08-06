@@ -28,6 +28,7 @@ GEM
     ast (2.0.0)
     astrolabe (1.3.1)
       parser (~> 2.2)
+    backports (3.6.6)
     coderay (1.1.0)
     daemons (1.2.3)
     diff-lcs (1.2.5)
@@ -90,6 +91,13 @@ GEM
       rack (~> 1.4)
       rack-protection (~> 1.4)
       tilt (>= 1.3, < 3)
+    sinatra-contrib (1.4.6)
+      backports (>= 2.0)
+      multi_json
+      rack-protection
+      rack-test
+      sinatra (~> 1.4.0)
+      tilt (>= 1.3, < 3)
     slop (3.6.0)
     thin (1.6.3)
       daemons (~> 1.0, >= 1.0.9)
@@ -111,4 +119,5 @@ DEPENDENCIES
   rugged-redis!
   simplecov
   sinatra
+  sinatra-contrib
   thin

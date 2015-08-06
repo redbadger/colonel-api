@@ -1,4 +1,5 @@
 require 'sinatra/base'
+require 'sinatra/reloader' if :development?
 require 'colonel'
 require 'rugged-redis'
 require 'pry'
@@ -14,18 +15,31 @@ Colonel.config.rugged_backend = redis_backend
 
 Document = Colonel::DocumentType.new('document') { index_name 'colonel-api' }
 
-Colonel::ElasticsearchProvider.initialize!
+retries = [3, 5, 10]
+begin
+  Colonel::ElasticsearchProvider.initialize!
+rescue
+  delay = retries.shift
+  if delay
+    sleep delay
+    retry
+  else
+    raise
+  end
+end
 
 # The API
 class App < Sinatra::Base
   set :bind, '0.0.0.0'
 
+  configure :development do
+    register Sinatra::Reloader
+  end
+
   before { content_type 'application/json' }
 
   get '/documents' do
-    Document.list(sort: { updated_at: 'desc' }).map do |doc|
-      doc_hash(doc)
-    end.to_json
+    Document.list(sort: { updated_at: 'desc' }).map(&:id).to_json
   end
 
   post '/documents' do
@@ -34,14 +48,7 @@ class App < Sinatra::Base
     doc.save!({ name: data['name'], email: data['email'] }, data['message'])
 
     status 201
-    body doc_hash(doc).to_json
-  end
-
-  get '/documents/:id' do |id|
-    state = params['state'] || 'master'
-    revision = Document.open(id).revisions[state]
-
-    revision_hash(revision).to_json
+    revision_hash(doc.revisions['master']).to_json
   end
 
   put '/documents/:id' do |id|
@@ -50,8 +57,7 @@ class App < Sinatra::Base
     doc.content = data['content']
     doc.save!({ name: data['name'], email: data['email'] }, data['message'])
 
-    status 200
-    body doc_hash(doc).to_json
+    revision_hash(doc.revisions['master']).to_json
   end
 
   post '/documents/:id/promote' do |id|
@@ -62,24 +68,18 @@ class App < Sinatra::Base
                  { name: data['name'], email: data['email'] },
                  data['message']
 
-    status 200
-    body doc_hash(doc).to_json
+    revision_hash(doc.revisions[params['to']]).to_json
   end
 
-  get '/documents/:id/revisions/:revision_id' do |id, revision_id|
-    revision_hash(Document.open(id).revisions[revision_id]).to_json
+  get '/documents/:id/revisions/:revision_id_or_state' do |id, id_or_state|
+    revision_hash(Document.open(id).revisions[id_or_state]).to_json
   end
 
   get '/documents/:id/revisions' do |id|
     state = params['state'] || 'master'
 
     Document.open(id).history(state).map do |revision|
-      {
-        id: revision.id,
-        name: revision.author[:name],
-        email: revision.author[:email],
-        message: revision.message
-      }
+      revision_hash(revision)
     end.to_json
   end
 
@@ -94,7 +94,13 @@ class App < Sinatra::Base
 
   def revision_hash(revision)
     {
-      revision_id: revision.id,
+      commit: {
+        id: revision.id,
+        name: revision.author[:name],
+        email: revision.author[:email],
+        message: revision.message,
+        timestamp: revision.timestamp.iso8601
+      },
       content: revision.content
     }
   end
