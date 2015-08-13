@@ -1,4 +1,5 @@
-[![Circle CI](https://circleci.com/gh/redbadger/colonel-api.svg?style=svg)](https://circleci.com/gh/redbadger/colonel-api)
+# fm-dubai-colonel-api
+Fork of https://github.com/redbadger/colonel-api
 
 # Colonel API
 
@@ -24,3 +25,4 @@ http://ip-from-Boot2Docker:8080
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
+>>>>>>> 23fb6194baef6c0375db113b27e9b10d04c1f401
